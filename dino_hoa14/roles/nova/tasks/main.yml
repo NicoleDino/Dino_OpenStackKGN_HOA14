@@ -1,0 +1,76 @@
+---
+## NOVA ##
+
+  - name: Installing Nova (Ubuntu)
+    apt:
+      name:
+        - nova-compute
+      state: latest
+      update_cache: yes
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Editing the Nova file (Ubuntu)
+    copy:
+      dest: /etc/nova/nova.conf
+      content: |
+        [DEFAULT]
+        transport_url = rabbit://openstack:RABBIT_PASS@controller
+
+        [api]
+        auth_strategy = keystone
+
+        [keystone_authtoken]
+        www_authenticate_uri = http://controller:5000/
+        auth_url = http://controller:5000/
+        memcached_servers = controller:11211
+        auth_type = password
+        project_domain_name = Default
+        user_domain_name = Default
+        project_name = service
+        username = nova
+        password = NOVA_PASS
+
+        [DEFAULT]
+        my_ip = 10.0.0.31
+
+        [vnc]
+        enabled = true
+        server_listen = 0.0.0.0
+        server_proxyclient_address = $my_ip
+        novncproxy_base_url = http://192.168.56.103:6080/vnc_auto.html
+
+        [glance]
+        api_servers = http://controller:9292
+
+        [oslo_concurrency]
+        lock_path = /var/lib/nova/tmp
+
+        [placement]
+        region_name = RegionOne
+        project_domain_name = Default
+        project_name = service
+        auth_type = password
+        user_domain_name = Default
+        auth_url = http://controller:5000/v3
+        username = placement
+        password = PLACEMENT_PASS
+        mode: 0755
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Editing the nova-compute file (Ubuntu)
+    copy:
+      dest: /etc/nova/nova-compute.conf
+      content: |
+        [libvirt]
+        virt_type = qemu
+
+        [scheduler]
+        discover_hosts_in_cells_interval = 300
+        mode: 0755
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Starting Nova-compute (Ubuntu)
+    systemd:
+      name: nova-compute
+      state: started
+    when: ansible_distribution == "Ubuntu"

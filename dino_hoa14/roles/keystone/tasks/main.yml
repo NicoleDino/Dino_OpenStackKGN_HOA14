@@ -1,0 +1,46 @@
+---
+## KEYSTONE ##
+
+  - name: Installing Keystone (Ubuntu)
+    apt:
+      name:
+        - keystone
+      state: latest
+      update_cache: yes
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Editing the MariaDB file (Ubuntu)
+    copy:
+      dest: /etc/keystone/keystone.conf
+      content: |
+          [database]
+          connection = mysql+pymysql://keystone:KEYSTONE_DBPASS@controller/keystone
+          [token]
+          provider = fernet
+          mode: 0755
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Initiate Fernet key (Ubuntu)
+    shell: |
+      keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+      keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Editing the MariaDB file (Ubuntu)
+    copy:
+      dest: /etc/apache2/apache2.conf
+      content: |
+        ServerName controller
+      mode: 0755
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Configuring the administrative account (Ubuntu)
+    shell: |
+      export OS_USERNAME=admin
+      export OS_PASSWORD=ADMIN_PASS
+      export OS_PROJECT_NAME=admin
+      export OS_USER_DOMAIN_NAME=Default
+      export OS_PROJECT_DOMAIN_NAME=Default
+      export OS_AUTH_URL=http://controller:5000/v3
+      export OS_IDENTITY_API_VERSION=3
+    when: ansible_distribution == "Ubuntu"
